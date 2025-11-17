@@ -1,0 +1,307 @@
+
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise Interativa da Dívida Pública Brasileira</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Warm Neutrals (Teal & Gray) -->
+    <!-- Application Structure Plan: A estrutura da SPA é baseada em abas de navegação (Visão Geral, Fatores 2022-2025, Comparativo 2018-2022). Esta arquitetura estilo 'dashboard' foi escolhida para permitir ao usuário focar em um aspecto de cada vez (o que é a dívida, quem fez o quê, qual o histórico) em vez de um longo scroll. A seção 'Fatores' tem sub-abas (Executivo/Legislativo) para isolar as ações de cada poder, respondendo diretamente à consulta do usuário e facilitando a atribuição de responsabilidade. O fluxo é guiado pela navegação principal, permitindo exploração focada e clara. -->
+    <!-- Visualization & Content Choices: Gráfico de Linha (Chart.js) para a 'Evolução da Dívida (% PIB)' (Goal: Change), mostrando a tendência 2018-2025. Gráfico de Barras (Chart.js) para o 'Resultado Primário' (Goal: Compare), essencial para ver o déficit/superávit (com cores dinâmicas para positivo/negativo). Para a atribuição de fatores ao 'Executivo' e 'Legislativo' (Goal: Organize/Inform), usei cards (HTML/Tailwind). Isso permite detalhar ações qualitativas (PECs, bloqueio de receitas) que são difíceis de quantificar num gráfico simples, tornando a análise mais clara para o usuário. Sem SVG/Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 450px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 4px solid transparent;
+        }
+        .nav-link.active {
+            border-bottom-color: #0d9488;
+            color: #0f766e;
+        }
+        .subnav-link {
+            transition: all 0.3s ease;
+        }
+        .subnav-link.active {
+            background-color: #0d9488;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <h1 class="text-2xl md:text-3xl font-bold text-teal-800">Análise da Dívida Pública Brasileira</h1>
+            </div>
+            <nav class="border-b border-gray-200">
+                <ul class="flex -mb-px space-x-6 md:space-x-8">
+                    <li><button class="nav-link active py-3 px-1 text-base md:text-lg font-semibold text-gray-600 hover:text-teal-700" data-target="visao-geral">Visão Geral</button></li>
+                    <li><button class="nav-link py-3 px-1 text-base md:text-lg font-semibold text-gray-600 hover:text-teal-700" data-target="fatores">Fatores (2022-2025)</button></li>
+                    <li><button class="nav-link py-3 px-1 text-base md:text-lg font-semibold text-gray-600 hover:text-teal-700" data-target="comparativo">Comparativo (2018-2022)</button></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <section id="visao-geral" class="content-section space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-2xl font-bold text-teal-700 mb-4">O Que é a Dívida Pública?</h2>
+                <p class="text-lg text-gray-700 leading-relaxed">
+                    Esta aplicação analisa os fatores que influenciaram a Dívida Pública Bruta (DPB) do Brasil, que representa o total das obrigações financeiras do governo. A dívida é medida como % do PIB para avaliar a capacidade de pagamento do país. Seu crescimento é impactado pelo resultado primário (arrecadação menos despesas, sem juros), pela taxa de juros (Selic) e pelo crescimento econômico. Explore as abas para entender a trajetória da dívida e as ações dos poderes Executivo e Legislativo.
+                </p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow space-y-4">
+                <h3 class="text-xl font-bold text-center text-gray-800">Evolução da Dívida Pública Bruta (% do PIB)</h3>
+                <p class="text-center text-gray-600">O gráfico abaixo mostra a trajetória da dívida bruta de 2018 a 2025 (com projeções). Note o pico durante a pandemia (2020) e a subsequente trajetória de acomodação e nova alta recente.</p>
+                <div class="chart-container">
+                    <canvas id="evolucaoDívidaChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="fatores" class="content-section hidden space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-2xl font-bold text-teal-700 mb-4">Fatores de Crescimento da Dívida (2022-2025)</h2>
+                <p class="text-lg text-gray-700 leading-relaxed">
+                    O período de 2022 a 2025 é marcado por uma transição de regimes fiscais (do Teto de Gastos para o Arcabouço Fiscal) e por intensas negociações políticas. O crescimento da dívida nesse período não se deve a um único fator, mas a uma combinação de decisões tomadas tanto pelo Poder Executivo quanto pelo Legislativo, que impactaram despesas e receitas. Use os botões abaixo para filtrar as ações por poder.
+                </p>
+                
+                <nav class="mt-6 border border-gray-200 rounded-lg p-2 flex flex-col sm:flex-row justify-center gap-2 bg-gray-50">
+                    <button class="subnav-link active flex-1 py-2 px-4 rounded-md font-semibold text-center" data-target="fatores-executivo">Ações do Executivo</button>
+                    <button class="subnav-link flex-1 py-2 px-4 rounded-md font-semibold text-center text-gray-600" data-target="fatores-legislativo">Ações do Legislativo</button>
+                </nav>
+            </div>
+
+            <div id="fatores-executivo" class="sub-content-section space-y-4">
+                <h3 class="text-xl font-bold text-gray-800">Impacto das Ações do Executivo</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-teal-600">
+                        <h4 class="font-bold text-lg mb-2">Arcabouço Fiscal (Receita)</h4>
+                        <p class="text-gray-600">O Executivo propôs o novo regime fiscal visando estabilizar a dívida. A eficácia do arcabouço depende crucialmente do aumento da arrecadação, com o governo editando Medidas Provisórias (MPs) e projetos para taxar fundos exclusivos, offshores e apostas esportivas.</p>
+                        <span class="mt-3 inline-block bg-teal-100 text-teal-800 px-3 py-1 rounded-full font-medium text-sm">Impacto: ⧖ Controle/Receita</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-red-500">
+                        <h4 class="font-bold text-lg mb-2">Expansão de Programas Sociais</h4>
+                        <p class="text-gray-600">A reestruturação e expansão do Bolsa Família (substituindo o Auxílio Brasil) representou um aumento permanente da despesa, considerado justificado socialmente para combater a pobreza pós-pandemia, mas com impacto fiscal relevante.</p>
+                        <span class="mt-3 inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full font-medium text-sm">Impacto: ▲ Aumento de Despesa</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-red-500">
+                        <h4 class="font-bold text-lg mb-2">Reajuste do Salário Mínimo</h4>
+                        <p class="text-gray-600">A política de valorização real do salário mínimo, embora benéfica para a economia, impacta diretamente os gastos da previdência (INSS) e benefícios assistenciais (BPC), pressionando as contas públicas de forma contínua.</p>
+                        <span class="mt-3 inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full font-medium text-sm">Impacto: ▲ Aumento de Despesa</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="fatores-legislativo" class="sub-content-section hidden space-y-4">
+                <h3 class="text-xl font-bold text-gray-800">Impacto das Ações do Legislativo</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-red-500">
+                        <h4 class="font-bold text-lg mb-2">PEC da Transição (Final de 2022)</h4>
+                        <p class="text-gray-600">Aprovada pelo Congresso, esta PEC expandiu o teto de gastos em mais de R$ 145 bilhões para 2023, permitindo a manutenção do Bolsa Família em R$ 600 e outros gastos. Foi uma ação direta que elevou o patamar da despesa.</p>
+                        <span class="mt-3 inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full font-medium text-sm">Impacto: ▲ Aumento de Despesa</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-yellow-500">
+                        <h4 class="font-bold text-lg mb-2">Resistência a Medidas de Receita</h4>
+                        <p class="text-gray-600">O Congresso demonstrou resistência em aprovar (ou "devolveu") MPs do Executivo que visavam aumentar a receita, como a reoneração parcial de combustíveis. Esse bloqueio ou demora em aprovar medidas de arrecadação dificulta o atingimento das metas do Arcabouço Fiscal.</p>
+                        <span class="mt-3 inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-medium text-sm">Impacto: ▼ Bloqueio de Receita</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-red-500">
+                        <h4 class="font-bold text-lg mb-2">Desoneração da Folha (17 setores)</h4>
+                        <p class="text-gray-600">O Legislativo aprovou a prorrogação da desoneração da folha de pagamento para 17 setores da economia, contrariando a equipe econômica. O Executivo vetou, mas o Congresso derrubou o veto, criando uma renúncia de receita significativa (que equivale a um aumento de despesa líquida).</p>
+                        <span class="mt-3 inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full font-medium text-sm">Impacto: ▲ Aumento de Despesa (Renúncia)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="comparativo" class="content-section hidden space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-2xl font-bold text-teal-700 mb-4">Comparativo: O Período 2018-2022</h2>
+                <p class="text-lg text-gray-700 leading-relaxed">
+                    O período anterior (2018-2022) foi dominado por dois eventos principais: a vigência do "Teto de Gastos" e a pandemia de COVID-19. O Teto, que limitava o crescimento da despesa, foi contornado diversas vezes (ex: PEC dos Precatórios). A pandemia exigiu gastos emergenciais massivos (Auxílio Emergencial), que levaram a dívida ao seu pico histórico em 2020, como visto no gráfico da Visão Geral.
+                </p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow space-y-4">
+                <h3 class="text-xl font-bold text-center text-gray-800">Resultado Primário do Governo (% do PIB)</h3>
+                <p class="text-center text-gray-600">O resultado primário é crucial. Déficits (barras vermelhas) significam que o governo gasta mais do que arrecada (antes dos juros), precisando emitir dívida. Superávits (barras verdes) ajudam a reduzir a dívida. Note o déficit recorde em 2020 (pandemia) e o superávit atípico em 2022 (alta de commodities e inflação).</p>
+                <div class="chart-container">
+                    <canvas id="resultadoPrimarioChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="mt-12 border-t border-gray-200 bg-white">
+        <div class="max-w-7xl mx-auto py-6 px-4 text-center text-gray-500">
+            <p>&copy; 2025 Aplicação Interativa de Análise. Esta é uma simulação de relatório baseada em dados públicos e projeções de mercado.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const evolucaoDívidaData = {
+                labels: ['2018', '2019', '2020', '2021', '2022', '2023', '2024 (p)', '2025 (p)'],
+                datasets: [{
+                    label: 'Dívida Bruta (% PIB)',
+                    data: [74.0, 74.3, 88.1, 80.3, 72.9, 74.5, 76.2, 77.1],
+                    borderColor: '#0d9488',
+                    backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 3
+                }]
+            };
+
+            const resultadoPrimarioData = {
+                labels: ['2018', '2019', '2020', '2021', '2022', '2023', '2024 (p)', '2025 (p)'],
+                datasets: [{
+                    label: 'Resultado Primário (% PIB)',
+                    data: [-1.7, -0.9, -9.4, -0.4, 1.3, -1.2, -0.9, -0.5],
+                    backgroundColor: (context) => {
+                        const value = context.dataset.data[context.dataIndex];
+                        return value > 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)';
+                    },
+                    borderColor: (context) => {
+                        const value = context.dataset.data[context.dataIndex];
+                        return value > 0 ? 'rgba(16, 185, 129, 1)' : 'rgba(239, 68, 68, 1)';
+                    },
+                    borderWidth: 1
+                }]
+            };
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        enabled: true,
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(1) + '%';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(1) + '%';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: '% do PIB'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            };
+            
+            const evolucaoCtx = document.getElementById('evolucaoDívidaChart');
+            if (evolucaoCtx) {
+                new Chart(evolucaoCtx, {
+                    type: 'line',
+                    data: evolucaoDívidaData,
+                    options: chartOptions
+                });
+            }
+
+            const primarioCtx = document.getElementById('resultadoPrimarioChart');
+            if (primarioCtx) {
+                new Chart(primarioCtx, {
+                    type: 'bar',
+                    data: resultadoPrimarioData,
+                    options: chartOptions
+                });
+            }
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    const targetId = link.getAttribute('data-target');
+
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+
+                    contentSections.forEach(section => {
+                        if (section.id === targetId) {
+                            section.classList.remove('hidden');
+                        } else {
+                            section.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            const subNavLinks = document.querySelectorAll('.subnav-link');
+            const subContentSections = document.querySelectorAll('.sub-content-section');
+
+            subNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    const targetId = link.getAttribute('data-target');
+
+                    subNavLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+
+                    subContentSections.forEach(section => {
+                        if (section.id === targetId) {
+                            section.classList.remove('hidden');
+                        } else {
+                            section.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+        });
+    </script>
+
+</body>
+</html>
